@@ -123,7 +123,7 @@ fn unitpool_get_force(index: i32, _method_info: OptionalMethod) -> Option<&'stat
 
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
 
-
+//Delete separated Emblems from the player force on map end.
 #[unity::hook("App", "MapSequence", "Complete")]
 pub fn mapsequence_complete(this: &mut (), _method_info: OptionalMethod) {
     call_original!(this, _method_info);
@@ -144,6 +144,8 @@ pub fn mapsequence_complete(this: &mut (), _method_info: OptionalMethod) {
     return;
 }
 
+// This function is what sets the text that appears in between the two windows
+// when targetting another unit.
 #[unity::hook("App", "MapBattleInfoRoot", "SetCommandText")]
 pub fn mapbattleinforoot_setcommandtext(this: &mut MapBattleInfoRoot, mind_type: i32, _method_info: OptionalMethod) {
     if mind_type != 0x39 {
@@ -177,6 +179,9 @@ pub fn mapbattleinforoot_setup(this: &(), mindtype: i32, skill: &SkillData, info
     result
 }
 
+
+// This function is responsible for the windows that pop up when you highlight a target.
+// The default behavior without this hook makes the battle forecast appear.  So weapons, hp, etc.
 #[unity::hook("App", "MapBattleInfoParamSetter", "SetBattleInfo")]
 pub fn mapbattleinfoparamsetter_setbattleinfo(this: &mut MapBattleInfoParamSetter, side_type: i32, show_window: bool, battle_info: &(), scene_list: &(), _method_info: OptionalMethod) {
     call_original!(this, side_type, show_window, battle_info, scene_list, _method_info);
@@ -190,6 +195,11 @@ pub fn mapbattleinfoparamsetter_setbattleinfo(this: &mut MapBattleInfoParamSette
     }
 }
 
+
+// This is a generic function that essentially checks the Mind value, and then calls
+// a more specialized Enumerate function based on the result.
+// Enumerate functions are used for checking if there is a valid target in range,
+// and making a list of them.
 #[unity::hook("App", "MapTarget", "Enumerate")]
 pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, _method_info: OptionalMethod) {
     
@@ -228,9 +238,11 @@ pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, _method_info: Option
                 });
         }
     }
-
 }
 
+
+// This is the function that usually runs when you press A while highlighting a target and the
+// forecast windows are up.
 #[unity::hook("App", "MapSequenceTargetSelect", "DecideNormal")]
 pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect, _method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
@@ -293,6 +305,7 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
     }
 }
 
+//This is the function that builds the summon menu allowing you to pick your desired orb color.
 #[unity::hook("App", "MapSummonMenu", "CreateSummonBind")]
 pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, _method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
@@ -307,9 +320,9 @@ pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, _method_info: Optional
     else {
         call_original!(sup, _method_info);
     }
-
 }
 
+//This function reads your mind value, and proc::jumps to the desired proc location.
 #[unity::hook("App", "MapSequenceMind", "Branch")]
 pub fn mapsequencemind_branch(this: &mut MapSequenceMind, _method_info: OptionalMethod) {
     
@@ -322,6 +335,8 @@ pub fn mapsequencemind_branch(this: &mut MapSequenceMind, _method_info: Optional
     }
 }
 
+//This function determines if you have combat anims on, and then proc::jumps
+//to the appropriate part of MapSequenceEngageSummon's procs based on that.
 #[unity::hook("App", "MapSequenceEngageSummon", "Branch")]
 pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, _method_info: OptionalMethod) {
     let mapmind_instance = get_instance::<MapMind>();
@@ -342,6 +357,7 @@ pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, _metho
     }
 }
 
+//This function creates the animation with the resulting function appearing on-screen alongside their rarity.
 #[unity::hook("App", "MapSequenceEngageSummon", "CreateTelop")]
 pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, _method_info: OptionalMethod) {
     let mapmind_instance = get_instance::<MapMind>();
@@ -353,20 +369,25 @@ pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, _
     }
 }
 
+//This function handles spawning the summoned unit, with all the proper flags.
 #[unity::hook("App", "Unit", "CreateForSummon")]
 pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, person: &mut PersonData, _method_info: OptionalMethod) {
     call_original!(this, original, rank, person, _method_info);
     let cur_mind = get_instance::<MapMind>().mind;
     if cur_mind == 0x39 {
+        //The status value in question denotes the spawned unit as a summon.
+        //We turn this off to keep the summon from de-spawning.
         if (this.status.value & 0x200000000000) != 0 {
             this.status.value = this.status.value ^ 0x200000000000;
             this.update();
+            //This code separates the unit from the emblem.
             original.clear_parent();
             original.update();
         }
     }
 }
 
+//This function determines which unit to spawn for the summoning.
 #[unity::hook("App", "UnitUtil", "CalcSummon")]
 pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: &SkillData, color: i32, dbgrank: i32, _method_info: OptionalMethod) -> bool {
     let mapmind_instance = get_instance::<MapMind>();
@@ -391,7 +412,7 @@ pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: 
     }
 }
 
-  // Create our new menu command for Steal.
+  // Create our new menu command.
 #[unity::hook("App", "MapUnitCommandMenu", "CreateBind")]
 pub fn mapunitcommandmenu_createbind(sup: &mut ProcInst, _method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
