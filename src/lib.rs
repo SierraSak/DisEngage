@@ -479,20 +479,19 @@ pub fn mapunitcommandmenu_createbind(sup: &mut ProcInst, _method_info: OptionalM
 }
 
 pub extern "C" fn disengage_get_name(_this: &(), _method_info: OptionalMethod) -> &'static Il2CppString {
-    
     if get_instance::<MapTarget>().unit.unwrap().get_god_unit().is_none() {
-        return "Reunite".into();
+        "Reunite".into()
+    } else {
+        "Separate".into()
     }
-    
-    "Separate".into()
 }
 
 pub extern "C" fn disengage_get_desc(_this: &(), _method_info: OptionalMethod) -> &'static Il2CppString {
     if get_instance::<MapTarget>().unit.unwrap().get_god_unit().is_none() {
-        return "Join up with an Emblem.".into();
+        "Join up with an Emblem.".into()
+    } else {
+        "Separate from your Emblem.".into()
     }
-    
-    "Separate from your Emblem.".into()
 }
 
 pub extern "C" fn disengage_get_mind(_this: &(), _method_info: OptionalMethod) -> i32 {
@@ -509,20 +508,21 @@ pub extern "C" fn disengage_get_is_forecast(_this: &(), _method_info: OptionalMe
 
 
 pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: OptionalMethod) -> i32 {
-    let maptarget_instance = get_instance::<MapTarget>();
-    if maptarget_instance.unit.unwrap().get_god_unit().is_some() {
-        return 1;
-    }
-    else{
-        if let Some(dataset) = maptarget_instance.m_dataset.as_mut() {
+    let map_target = get_instance::<MapTarget>();
+
+    if map_target.unit.unwrap().get_god_unit().is_some() {
+        1
+    } else {
+        if let Some(dataset) = map_target.m_dataset.as_mut() {
             dataset.clear();
         }
-        maptarget_enumerate(maptarget_instance, 0, _method_info);
-        if (maptarget_instance.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && maptarget_instance.unit.unwrap().get_job().name.to_string() != "MJID_Emblem"{
-            return 1;
-        }
-        else {
-            return 4;
+
+        maptarget_enumerate(map_target, 0, _method_info);
+
+        if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" {
+            1
+        } else {
+            4
         }
     }
 }
