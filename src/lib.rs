@@ -244,7 +244,7 @@ pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, _method_info: Option
 // This is the function that usually runs when you press A while highlighting a target and the
 // forecast windows are up.
 #[unity::hook("App", "MapSequenceTargetSelect", "DecideNormal")]
-pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect, _method_info: OptionalMethod) {
+pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect, method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
 
 
@@ -272,13 +272,13 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
                         if let Some(god) = god_data {
                             println!("God: {}", god.ascii_name.unwrap());
 
-                            if let Some(god_unit) = unsafe { godpool_tryget(god.get_gid().unwrap(), _method_info) } {
+                            if let Some(god_unit) = unsafe { godpool_tryget(god.get_gid().unwrap(), method_info) } {
                                 println!("God: {}", god_unit.data.ascii_name.unwrap());
 
                                 maptarget_instance.unit.unwrap().set_god_unit(god_unit);
                                 maptarget_instance.unit.unwrap().update();
 
-                                unsafe { unitutil_summondeleteimpl(target.m_unit, _method_info); }
+                                unsafe { unitutil_summondeleteimpl(target.m_unit, method_info); }
                             }
                         }
                     }
@@ -298,13 +298,13 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
 
         GameSound::post_event("Decide", None);
     } else {
-        call_original!(this, _method_info)
+        call_original!(this, method_info)
     }
 }
 
 //This is the function that builds the summon menu allowing you to pick your desired orb color.
 #[unity::hook("App", "MapSummonMenu", "CreateSummonBind")]
-pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, _method_info: OptionalMethod) {
+pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, method_info: OptionalMethod) {
     let map_target = get_instance::<MapTarget>();
     
     if map_target.m_mind == 0x39 {
@@ -321,42 +321,42 @@ pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, _method_info: Optional
         ProcInst::jump(map_sequence_human,0x20);
     }
     else {
-        call_original!(sup, _method_info);
+        call_original!(sup, method_info);
     }
 }
 
-//This function reads your mind value, and proc::jumps to the desired proc location.
+/// This function reads your mind value, and ProcInst::Jump to the desired proc location.
 #[unity::hook("App", "MapSequenceMind", "Branch")]
-pub fn mapsequencemind_branch(this: &mut MapSequenceMind, _method_info: OptionalMethod) {
-    
-    call_original!(this, _method_info);
-    let mapmind_instance = get_instance::<MapMind>();
-    let cur_mind = mapmind_instance.mind;
+pub fn mapsequencemind_branch(this: &mut MapSequenceMind, method_info: OptionalMethod) {
+    call_original!(this, method_info);
 
-    if cur_mind == 0x39 {
+    let map_mind = get_instance::<MapMind>();
+
+    // Custom value for our command
+    if map_mind.mind == 0x39 {
+        // Jump to MapSequenceMind::EngageSummon
         ProcInst::jump(this, 0x16);
     }
 }
 
-//This function determines if you have combat anims on, and then proc::jumps
-//to the appropriate part of MapSequenceEngageSummon's procs based on that.
+/// This function determines if you have combat anims on, and then ProcInst::Jump
+/// to the appropriate part of MapSequenceEngageSummon's procs based on that.
 #[unity::hook("App", "MapSequenceEngageSummon", "Branch")]
-pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, _method_info: OptionalMethod) {
-    let mapmind_instance = get_instance::<MapMind>();
-    if mapmind_instance.mind == 0x39 {
+pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
+    let map_mind = get_instance::<MapMind>();
 
+    if map_mind.mind == 0x39 {
         let mut jump_label = 0;
 
-        if unsafe{fade_isfadeout(_method_info)} {
-            jump_label = 2;
-        }
-        else {
-            jump_label = 0;
-        }
+        let jump_label = if unsafe { fade_isfadeout(method_info) } {
+            2 // MapSequenceEngageSummon::After
+        } else {
+            0 // MapSequenceEngageSummon::Simple
+        };
+
         ProcInst::jump(this, jump_label);
-    }
-    else{
-        call_original!(this, _method_info);
+    } else {
+        call_original!(this, method_info);
     }
 }
 
