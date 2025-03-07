@@ -266,7 +266,7 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
                         let god_data = GodData::get_list_mut().expect("Couldn't reach GodData List")
                             .iter()
                             .find(|curr_god| {
-                                curr_god.get_gid().unwrap().to_string() == ("GID_".to_owned() + &unsafe{ persondata_getsummongod(person, _method_info) }.unwrap().to_string())
+                                curr_god.get_gid().unwrap().to_string() == ("GID_".to_owned() + &unsafe { persondata_getsummongod(person, method_info) }.unwrap().to_string())
                             });
                         
                         if let Some(god) = god_data {
