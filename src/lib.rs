@@ -123,25 +123,14 @@ fn unitpool_get_force(index: i32, _method_info: OptionalMethod) -> Option<&'stat
 
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
 
-//Delete separated Emblems from the player force on map end.
+/// Delete separated Emblems from the player force on map end.
 #[unity::hook("App", "MapSequence", "Complete")]
-pub fn mapsequence_complete(this: &mut (), _method_info: OptionalMethod) {
-    call_original!(this, _method_info);
-    let force = unsafe{unitpool_get_force(0, _method_info)};
-    let mut unit = force.unwrap().head;
+pub fn mapsequence_complete(this: &mut (), method_info: OptionalMethod) {
+    call_original!(this, method_info);
 
-    loop {
-        if unit.is_some() {
-            if unit.unwrap().get_pid().contains("PID_SUMMON") {
-                unsafe{unitutil_summondeleteimpl(unit.unwrap(), _method_info);}
-            }
-            unit = unit.unwrap().next;
-        }
-        else {
-            return;
-        }
-    }
-    return;
+    UnitPool::get_force(ForceType::Player as i32).iter()
+        .filter(|unit| unit.get_pid().contains("PID_SUMMON"))
+        .for_each(|unit| unsafe{ unitutil_summondeleteimpl(unit, method_info) });
 }
 
 // This function is what sets the text that appears in between the two windows
