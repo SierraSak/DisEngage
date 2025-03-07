@@ -360,15 +360,13 @@ pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, method
     }
 }
 
-//This function creates the animation with the resulting function appearing on-screen alongside their rarity.
+/// This function creates the animation with the resulting function appearing on-screen alongside their rarity.
 #[unity::hook("App", "MapSequenceEngageSummon", "CreateTelop")]
-pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, _method_info: OptionalMethod) {
-    let mapmind_instance = get_instance::<MapMind>();
-    if mapmind_instance.mind == 0x39 {
-        return;
-    }
-    else{
-        call_original!(this, _method_info);
+pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
+    let map_mind = get_instance::<MapMind>();
+    
+    if map_mind.mind != 0x39 {
+        call_original!(this, method_info);
     }
 }
 
