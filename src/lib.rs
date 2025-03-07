@@ -370,17 +370,20 @@ pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, m
     }
 }
 
-//This function handles spawning the summoned unit, with all the proper flags.
+/// This function handles spawning the summoned unit, with all the proper flags.
 #[unity::hook("App", "Unit", "CreateForSummon")]
-pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, person: &mut PersonData, _method_info: OptionalMethod) {
-    call_original!(this, original, rank, person, _method_info);
-    let cur_mind = get_instance::<MapMind>().mind;
-    if cur_mind == 0x39 {
-        //The status value in question denotes the spawned unit as a summon.
-        //We turn this off to keep the summon from de-spawning.
+pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, person: &mut PersonData, method_info: OptionalMethod) {
+    call_original!(this, original, rank, person, method_info);
+
+    let map_mind = get_instance::<MapMind>();
+
+    if map_mind.mind == 0x39 {
+        // The status value in question denotes the spawned unit as a summon.
+        // We turn this off to keep the summon from de-spawning.
         if (this.status.value & 0x200000000000) != 0 {
             this.status.value = this.status.value ^ 0x200000000000;
             this.update();
+            
             //This code separates the unit from the emblem.
             original.clear_parent();
             original.update();
