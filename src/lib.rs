@@ -251,54 +251,51 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
     let mut cur_mind = maptarget_instance.m_mind;
 
     if cur_mind == 0x39 {
-        if maptarget_instance.unit.unwrap().get_god_unit().is_none(){
-            let mut unit_index = 7;
+        let mapsequencehuman_instance = get_singleton_proc_instance::<MapSequenceHuman>().unwrap();
 
-            if this.target_data.is_some() {
-                unit_index = this.target_data.unwrap().m_unit.index;
-            }
+        if let Some(unit) = maptarget_instance.unit {
+            if unit.get_god_unit().is_none() {
+                if let Some(target) = this.target_data {
+                    let person_data = PersonData::get_list_mut().expect("Couldn't reach PersonData List")
+                        .iter()
+                        .find(|curr_char|curr_char.pid == target.m_unit.get_pid());
 
-            let personlist = PersonData::get_list_mut().expect("Couldn't reach PersonData List");
-            let personcheck = personlist
-            .iter()
-            .find(|curr_char|curr_char.pid == this.target_data.unwrap().m_unit.get_pid());
-            if personcheck.is_some() {
-                println!("Person: {}", personcheck.as_ref().unwrap().get_ascii_name().unwrap());
-                let godlist = GodData::get_list_mut().expect("Couldn't reach GodData List");
-                let godcheck = godlist
-                .iter()
-                .find(|curr_god|curr_god.get_gid().unwrap().to_string() == ("GID_".to_owned() + &unsafe{persondata_getsummongod(personcheck.as_ref().unwrap(), _method_info)}.unwrap().to_string()));
-                if godcheck.is_some() {
-                    println!("God: {}", godcheck.as_ref().unwrap().ascii_name.unwrap());
-                    let goduni = unsafe{godpool_tryget(godcheck.unwrap().get_gid().unwrap(), _method_info)};
-                    if goduni.is_some() {
-                        println!("God: {}", goduni.as_ref().unwrap().data.ascii_name.unwrap());
-                        maptarget_instance.unit.unwrap().set_god_unit(goduni.unwrap());
-                        maptarget_instance.unit.unwrap().update();
-                        unsafe{unitutil_summondeleteimpl(this.target_data.unwrap().m_unit, _method_info);}
+                    if let Some(person) = person_data {
+                        println!("Person: {}", person.get_ascii_name().unwrap());
+
+                        let god_data = GodData::get_list_mut().expect("Couldn't reach GodData List")
+                            .iter()
+                            .find(|curr_god| {
+                                curr_god.get_gid().unwrap().to_string() == ("GID_".to_owned() + &unsafe{ persondata_getsummongod(person, _method_info) }.unwrap().to_string())
+                            });
+                        
+                        if let Some(god) = god_data {
+                            println!("God: {}", god.ascii_name.unwrap());
+
+                            if let Some(god_unit) = unsafe { godpool_tryget(god.get_gid().unwrap(), _method_info) } {
+                                println!("God: {}", god_unit.data.ascii_name.unwrap());
+
+                                maptarget_instance.unit.unwrap().set_god_unit(god_unit);
+                                maptarget_instance.unit.unwrap().update();
+
+                                unsafe { unitutil_summondeleteimpl(target.m_unit, _method_info); }
+                            }
+                        }
                     }
-                    
+
+                    let mapmind_instance = get_instance::<MapMind>();
+
+                    mapmind_instance.mind = 1;
+                    maptarget_instance.m_mind = 1;
                 }
-                let mapsequencehuman_instance = get_singleton_proc_instance::<MapSequenceHuman>().unwrap();
-                let mapmind_instance = get_instance::<MapMind>();
-                mapmind_instance.mind = 1;
-                maptarget_instance.m_mind = 1;
-                ProcInst::jump(mapsequencehuman_instance, 0x2E);
-            }
-            else {
-                let mapsequencehuman_instance = get_singleton_proc_instance::<MapSequenceHuman>().unwrap();
-                let mapmind_instance = get_instance::<MapMind>();
-                mapmind_instance.mind = 1;
-                maptarget_instance.m_mind = 1;
-                ProcInst::jump(mapsequencehuman_instance, 0x2E);
+            } else {
+                this.set_mapmind();
             }
         }
-        else {
-            this.set_mapmind();
-        
-            let mapsequencehuman_instance = get_singleton_proc_instance::<MapSequenceHuman>().unwrap();
-            ProcInst::jump(mapsequencehuman_instance, 0x2e);
-        }
+
+        // Jump to MapSequenceHuman::Mind label
+        ProcInst::jump(mapsequencehuman_instance, 0x2E);
+
         GameSound::post_event("Decide", None);
     } else {
         call_original!(this, _method_info)
