@@ -305,14 +305,20 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
 //This is the function that builds the summon menu allowing you to pick your desired orb color.
 #[unity::hook("App", "MapSummonMenu", "CreateSummonBind")]
 pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, _method_info: OptionalMethod) {
-    let maptarget_instance = get_instance::<MapTarget>();
-    let cur_mind = maptarget_instance.m_mind;
-    if cur_mind == 0x39 {
-        let mapmind_instance = get_instance::<MapMind>();
-        mapmind_instance.item_index = 1;
-        mapmind_instance.x = maptarget_instance.unit.unwrap().x as i8;
-        mapmind_instance.z = maptarget_instance.unit.unwrap().z as i8;
-        ProcInst::jump(get_singleton_proc_instance::<MapSequenceHuman>().unwrap(),0x20);
+    let map_target = get_instance::<MapTarget>();
+    
+    if map_target.m_mind == 0x39 {
+        let map_mind = get_instance::<MapMind>();
+        map_mind.item_index = 1;
+
+        let unit = map_target.unit.expect("MapTarget does not have a Unit");
+        map_mind.x = unit.x as i8;
+        map_mind.z = unit.z as i8;
+
+        let map_sequence_human = get_singleton_proc_instance::<MapSequenceHuman>().unwrap();
+
+        // Jump to MapSequenceHuman::TargetSelect
+        ProcInst::jump(map_sequence_human,0x20);
     }
     else {
         call_original!(sup, _method_info);
