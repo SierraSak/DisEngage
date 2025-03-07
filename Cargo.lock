@@ -3,15 +3,6 @@
 version = 3
 
 [[package]]
-name = "DisEngage"
-version = "0.1.0"
-dependencies = [
- "engage",
- "skyline 0.2.1 (git+https://github.com/ultimate-research/skyline-rs)",
- "unity",
-]
-
-[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -68,6 +59,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.99",
+]
+
+[[package]]
+name = "disengage"
+version = "0.1.0"
+dependencies = [
+ "engage",
+ "skyline 0.2.1 (git+https://github.com/ultimate-research/skyline-rs)",
+ "unity",
 ]
 
 [[package]]
