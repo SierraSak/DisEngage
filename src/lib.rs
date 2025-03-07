@@ -383,7 +383,7 @@ pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, per
         if (this.status.value & 0x200000000000) != 0 {
             this.status.value = this.status.value ^ 0x200000000000;
             this.update();
-            
+
             //This code separates the unit from the emblem.
             original.clear_parent();
             original.update();
@@ -391,28 +391,30 @@ pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, per
     }
 }
 
-//This function determines which unit to spawn for the summoning.
+/// This function determines which unit to spawn for the summoning.
 #[unity::hook("App", "UnitUtil", "CalcSummon")]
-pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: &SkillData, color: i32, dbgrank: i32, _method_info: OptionalMethod) -> bool {
-    let mapmind_instance = get_instance::<MapMind>();
-    if mapmind_instance.mind == 0x39 {
+pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: &SkillData, color: i32, dbgrank: i32, method_info: OptionalMethod) -> bool {
+    let map_mind = get_instance::<MapMind>();
+
+    if map_mind.mind == 0x39 {
         *rank = 3;
-        let maptarget_instance = get_instance::<MapTarget>();
+
+        let map_target = get_instance::<MapTarget>();
 
         let personlist = PersonData::get_list_mut().expect("Couldn't reach PersonData List");
-        let personcheck = personlist
-        .iter_mut()
-        .find(|curr_char|curr_char.pid.to_string() == ("PID_SUMMON_".to_owned() + &maptarget_instance.unit.unwrap().god_unit.unwrap().data.asset_id.to_string()));
-        if personcheck.is_some() {
-            *person = personcheck.unwrap();
-            return true;
+
+        let person_data = personlist
+            .iter_mut()
+            .find(|curr_char|curr_char.pid.to_string() == ("PID_SUMMON_".to_owned() + &map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string())); // Ray: I'd usually smithe someone from writing this many unwraps without handling errors, but I assume if this runs into an error it should crash anyways.
+
+        if let Some(found_person) = person_data {
+            *person = found_person;
+            true
+        } else {
+            false
         }
-        else {
-            return false;
-        }
-    }
-    else {
-        call_original!(person, rank, skill, color, dbgrank, _method_info)
+    } else {
+        call_original!(person, rank, skill, color, dbgrank, method_info)
     }
 }
 
