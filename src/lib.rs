@@ -2,6 +2,7 @@
 
 mod enume;
 use enume::ReUniteTargetEnumerator;
+use skyline::println;
 
 use std::sync::OnceLock;
 
@@ -125,7 +126,7 @@ static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
 
 /// Delete separated Emblems from the player force on map end.
 #[unity::hook("App", "MapSequence", "Complete")]
-pub fn mapsequence_complete(this: &mut (), method_info: OptionalMethod) {
+pub fn mapsequence_complete_disengage(this: &mut (), method_info: OptionalMethod) {
     call_original!(this, method_info);
 
     UnitPool::get_force(ForceType::Player as i32).iter()
@@ -136,7 +137,7 @@ pub fn mapsequence_complete(this: &mut (), method_info: OptionalMethod) {
 // This function is what sets the text that appears in between the two windows
 // when targetting another unit.
 #[unity::hook("App", "MapBattleInfoRoot", "SetCommandText")]
-pub fn mapbattleinforoot_setcommandtext(this: &mut MapBattleInfoRoot, mind_type: i32, method_info: OptionalMethod) {
+pub fn mapbattleinforoot_setcommandtext_disengage(this: &mut MapBattleInfoRoot, mind_type: i32, method_info: OptionalMethod) {
     if mind_type != 0x39 {
         call_original!(this, mind_type, method_info);
     } else {
@@ -156,7 +157,7 @@ pub fn mapbattleinforoot_setcommandtext(this: &mut MapBattleInfoRoot, mind_type:
 // Thankfully, the default behavior is almost exactly what we want, we just need to adjust it
 // to return false, since that's what hides the damage arrows.
 #[unity::hook("App", "MapBattleInfoRoot", "Setup")]
-pub fn mapbattleinforoot_setup(this: &(), mindtype: i32, skill: &SkillData, info: &(), scene_list: &(), method_info: OptionalMethod) -> bool {
+pub fn mapbattleinforoot_setup_disengage(this: &(), mindtype: i32, skill: &SkillData, info: &(), scene_list: &(), method_info: OptionalMethod) -> bool {
     let result = call_original!(this, mindtype, skill, info, scene_list, method_info);
 
     if mindtype == 0x39 {
@@ -170,7 +171,7 @@ pub fn mapbattleinforoot_setup(this: &(), mindtype: i32, skill: &SkillData, info
 // This function is responsible for the windows that pop up when you highlight a target.
 // The default behavior without this hook makes the battle forecast appear.  So weapons, hp, etc.
 #[unity::hook("App", "MapBattleInfoParamSetter", "SetBattleInfo")]
-pub fn mapbattleinfoparamsetter_setbattleinfo(this: &mut MapBattleInfoParamSetter, side_type: i32, show_window: bool, battle_info: &(), scene_list: &(), method_info: OptionalMethod) {
+pub fn mapbattleinfoparamsetter_setbattleinfo_disengage(this: &mut MapBattleInfoParamSetter, side_type: i32, show_window: bool, battle_info: &(), scene_list: &(), method_info: OptionalMethod) {
     call_original!(this, side_type, show_window, battle_info, scene_list, method_info);
 
     let map_target = get_instance::<MapTarget>();
@@ -186,12 +187,7 @@ pub fn mapbattleinfoparamsetter_setbattleinfo(this: &mut MapBattleInfoParamSette
 // Enumerate functions are used for checking if there is a valid target in range,
 // and making a list of them.
 #[unity::hook("App", "MapTarget", "Enumerate")]
-pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, method_info: OptionalMethod) {
-    
-    if this.m_mind < 0x38 {
-        call_original!(this, mask, method_info);
-    }
-
+pub fn maptarget_enumerate_disengage(this: &mut MapTarget, mask: i32, method_info: OptionalMethod) {
     if this.m_mind == 0x39 {
         this.m_action_mask = mask as u32;
 
@@ -223,6 +219,8 @@ pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, method_info: Optiona
                     data_item.m_index = count_var as i8;    
                 });
         }
+    } else {
+        call_original!(this, mask, method_info);
     }
 }
 
@@ -230,7 +228,7 @@ pub fn maptarget_enumerate(this: &mut MapTarget, mask: i32, method_info: Optiona
 // This is the function that usually runs when you press A while highlighting a target and the
 // forecast windows are up.
 #[unity::hook("App", "MapSequenceTargetSelect", "DecideNormal")]
-pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect, method_info: OptionalMethod) {
+pub fn mapsequencetargetselect_decide_normal_disengage(this: &mut MapSequenceTargetSelect, method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
 
 
@@ -290,7 +288,7 @@ pub fn mapsequencetargetselect_decide_normal(this: &mut MapSequenceTargetSelect,
 
 //This is the function that builds the summon menu allowing you to pick your desired orb color.
 #[unity::hook("App", "MapSummonMenu", "CreateSummonBind")]
-pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, method_info: OptionalMethod) {
+pub fn mapsummonmenu_createsummonbind_disengage(sup: &mut ProcInst, method_info: OptionalMethod) {
     let map_target = get_instance::<MapTarget>();
     
     if map_target.m_mind == 0x39 {
@@ -313,7 +311,7 @@ pub fn mapsummonmenu_createsummonbind(sup: &mut ProcInst, method_info: OptionalM
 
 /// This function reads your mind value, and ProcInst::Jump to the desired proc location.
 #[unity::hook("App", "MapSequenceMind", "Branch")]
-pub fn mapsequencemind_branch(this: &mut MapSequenceMind, method_info: OptionalMethod) {
+pub fn mapsequencemind_branch_disengage(this: &mut MapSequenceMind, method_info: OptionalMethod) {
     call_original!(this, method_info);
 
     let map_mind = get_instance::<MapMind>();
@@ -328,7 +326,7 @@ pub fn mapsequencemind_branch(this: &mut MapSequenceMind, method_info: OptionalM
 /// This function determines if you have combat anims on, and then ProcInst::Jump
 /// to the appropriate part of MapSequenceEngageSummon's procs based on that.
 #[unity::hook("App", "MapSequenceEngageSummon", "Branch")]
-pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
+pub fn mapsequenceengagesummon_branch_disengage(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
     let map_mind = get_instance::<MapMind>();
 
     if map_mind.mind == 0x39 {
@@ -346,7 +344,7 @@ pub fn mapsequenceengagesummon_branch(this: &mut MapSequenceEngageSummon, method
 
 /// This function creates the animation with the resulting function appearing on-screen alongside their rarity.
 #[unity::hook("App", "MapSequenceEngageSummon", "CreateTelop")]
-pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
+pub fn mapsequenceengagesummon_createtelop_disengage(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
     let map_mind = get_instance::<MapMind>();
     
     if map_mind.mind != 0x39 {
@@ -356,7 +354,7 @@ pub fn mapsequenceengagesummon_createtelop(this: &mut MapSequenceEngageSummon, m
 
 /// This function handles spawning the summoned unit, with all the proper flags.
 #[unity::hook("App", "Unit", "CreateForSummon")]
-pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, person: &mut PersonData, method_info: OptionalMethod) {
+pub fn unit_createforsummon_disengage(this: &mut Unit, original: &mut Unit, rank: i32, person: &mut PersonData, method_info: OptionalMethod) {
     call_original!(this, original, rank, person, method_info);
 
     let map_mind = get_instance::<MapMind>();
@@ -377,7 +375,7 @@ pub fn unit_createforsummon(this: &mut Unit, original: &mut Unit, rank: i32, per
 
 /// This function determines which unit to spawn for the summoning.
 #[unity::hook("App", "UnitUtil", "CalcSummon")]
-pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: &SkillData, color: i32, dbgrank: i32, method_info: OptionalMethod) -> bool {
+pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i32, skill: &SkillData, color: i32, dbgrank: i32, method_info: OptionalMethod) -> bool {
     let map_mind = get_instance::<MapMind>();
 
     if map_mind.mind == 0x39 {
@@ -404,7 +402,7 @@ pub fn unitutil_calcsummon(person: &mut &mut PersonData, rank: &mut i32, skill: 
 
   // Create our new menu command.
 #[unity::hook("App", "MapUnitCommandMenu", "CreateBind")]
-pub fn mapunitcommandmenu_createbind(sup: &mut ProcInst, _method_info: OptionalMethod) {
+pub fn mapunitcommandmenu_createbind_disengage(sup: &mut ProcInst, _method_info: OptionalMethod) {
     // Create a new class using EngageSummonMenuItem as reference so that we do not wreck the original command for ours.
     let disengage = DISENGAGE_CLASS.get_or_init(|| {
         // EngageSummonMenuItem is a nested class inside of MapUnitCommandMenu, so we need to dig for it.
@@ -498,8 +496,7 @@ pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: Optional
         if let Some(dataset) = map_target.m_dataset.as_mut() {
             dataset.clear();
         }
-
-        maptarget_enumerate(map_target, 0, _method_info);
+        map_target.enumerate_reunite();
 
         if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" {
             1
@@ -545,19 +542,20 @@ pub fn main() {
         );
     }));
 
+    
     skyline::install_hooks!(
-        mapunitcommandmenu_createbind,
-        maptarget_enumerate,
-        mapsequencemind_branch,
-        mapsequenceengagesummon_branch,
-        unit_createforsummon,
-        unitutil_calcsummon,
-        mapsummonmenu_createsummonbind,
-        mapsequenceengagesummon_createtelop,
-        mapsequencetargetselect_decide_normal,
-        mapbattleinfoparamsetter_setbattleinfo,
-        mapbattleinforoot_setcommandtext,
-        mapbattleinforoot_setup,
-        mapsequence_complete
+        mapunitcommandmenu_createbind_disengage,
+        maptarget_enumerate_disengage,
+        mapsequencemind_branch_disengage,
+        mapsequenceengagesummon_branch_disengage,
+        unit_createforsummon_disengage,
+        unitutil_calcsummon_disengage,
+        mapsummonmenu_createsummonbind_disengage,
+        mapsequenceengagesummon_createtelop_disengage,
+        mapsequencetargetselect_decide_normal_disengage,
+        mapbattleinfoparamsetter_setbattleinfo_disengage,
+        mapbattleinforoot_setcommandtext_disengage,
+        mapbattleinforoot_setup_disengage,
+        mapsequence_complete_disengage
     );
 }
