@@ -1,6 +1,7 @@
 #![feature(ptr_sub_ptr)]
 
 mod enume;
+use std::num::*;
 use enume::ReUniteTargetEnumerator;
 use skyline::println;
 
@@ -123,6 +124,29 @@ fn godpool_tryget(gid: &'static Il2CppString, _method_info: OptionalMethod) -> O
 fn unitpool_get_force(index: i32, _method_info: OptionalMethod) -> Option<&'static Force>;
 
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
+
+#[unity::hook("App", "Unit", "CreateForSummonImpl1")]
+pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData, original: &Unit, rank: i32, method_info: OptionalMethod) {
+    call_original!(this, person, original, rank, method_info);
+    let map_target = get_instance::<MapTarget>();
+    if map_target.m_mind == 0x39 {
+        this.unit_item_remove_index(0, false);
+        if person.get_items().is_some() {
+            let orig_level = original.level + original.internal_level as u8;
+            let item_count = (person.get_items().unwrap().len() - 1) as u8;
+            let item_give =  ((orig_level / 10).clamp(0, item_count)) as usize;
+            
+            let mut index = 0;
+            loop {
+                this.unit_item_add_iid(person.get_items().unwrap().get(index).unwrap());
+                if index == item_give {
+                    break;
+                }
+                index = index + 1;
+            }
+        }
+    }
+}
 
 /// Delete separated Emblems from the player force on map end.
 #[unity::hook("App", "MapSequence", "Complete")]
@@ -556,6 +580,7 @@ pub fn main() {
         mapbattleinfoparamsetter_setbattleinfo_disengage,
         mapbattleinforoot_setcommandtext_disengage,
         mapbattleinforoot_setup_disengage,
-        mapsequence_complete_disengage
+        mapsequence_complete_disengage,
+        unit_createforsummonimpl1_disengage
     );
 }
