@@ -447,6 +447,7 @@ pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i3
         let personlist = PersonData::get_list_mut().expect("Couldn't reach PersonData List");
         let mut god_name = map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string();
 
+        //Add the possibility of getting Robin instead of Chrom
         if god_name == "クロム" {
             let rnmnm = unsafe{battlemath_get_value(2, method_info)};
             println!("{}", rnmnm);
@@ -454,6 +455,8 @@ pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i3
                 god_name = "ルフレ".to_string();
             };
         }
+        //If you have Ephraim, this'll give you Eirika instead.  Feel free to remove this if you've
+        //added an Ephraim Disengage PID.
         else if god_name == "エフラム" {
             god_name = "エイリーク".to_string();
         }
