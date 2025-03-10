@@ -168,7 +168,8 @@ impl UnitEngageManip for Unit {
     }
 }
 
-
+///This function is used for creating the unit.
+///We edit it here in order to properly fill out it's inventory.
 #[unity::hook("App", "Unit", "CreateForSummonImpl1")]
 pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData, original: &Unit, rank: i32, method_info: OptionalMethod) {
     call_original!(this, person, original, rank, method_info);
@@ -192,8 +193,8 @@ pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData,
     }
 }
 
-// This function is what sets the text that appears in between the two windows
-// when targetting another unit.
+/// This function is what sets the text that appears in between the two windows
+/// when targetting another unit.
 #[unity::hook("App", "MapBattleInfoRoot", "SetCommandText")]
 pub fn mapbattleinforoot_setcommandtext_disengage(this: &mut MapBattleInfoRoot, mind_type: i32, method_info: OptionalMethod) {
     if mind_type != 0x39 {
@@ -209,11 +210,11 @@ pub fn mapbattleinforoot_setcommandtext_disengage(this: &mut MapBattleInfoRoot, 
     }
 }
 
-// Makes the game hide the damage forecast arrows.
-// This function is primarily for setting the
-// command name in between the two windows, and deciding whether to hide the damage arrows.
-// Thankfully, the default behavior is almost exactly what we want, we just need to adjust it
-// to return false, since that's what hides the damage arrows.
+/// Makes the game hide the damage forecast arrows.
+/// This function is primarily for setting the
+/// command name in between the two windows, and deciding whether to hide the damage arrows.
+/// Thankfully, the default behavior is almost exactly what we want, we just need to adjust it
+/// to return false, since that's what hides the damage arrows.
 #[unity::hook("App", "MapBattleInfoRoot", "Setup")]
 pub fn mapbattleinforoot_setup_disengage(this: &(), mindtype: i32, skill: &SkillData, info: &(), scene_list: &(), method_info: OptionalMethod) -> bool {
     let result = call_original!(this, mindtype, skill, info, scene_list, method_info);
@@ -226,8 +227,8 @@ pub fn mapbattleinforoot_setup_disengage(this: &(), mindtype: i32, skill: &Skill
 }
 
 
-// This function is responsible for the windows that pop up when you highlight a target.
-// The default behavior without this hook makes the battle forecast appear.  So weapons, hp, etc.
+/// This function is responsible for the windows that pop up when you highlight a target.
+/// The default behavior without this hook makes the battle forecast appear.  So weapons, hp, etc.
 #[unity::hook("App", "MapBattleInfoParamSetter", "SetBattleInfo")]
 pub fn mapbattleinfoparamsetter_setbattleinfo_disengage(this: &mut MapBattleInfoParamSetter, side_type: i32, show_window: bool, battle_info: &(), scene_list: &(), method_info: OptionalMethod) {
     call_original!(this, side_type, show_window, battle_info, scene_list, method_info);
@@ -240,10 +241,10 @@ pub fn mapbattleinfoparamsetter_setbattleinfo_disengage(this: &mut MapBattleInfo
 }
 
 
-// This is a generic function that essentially checks the Mind value, and then calls
-// a more specialized Enumerate function based on the result.
-// Enumerate functions are used for checking if there is a valid target in range,
-// and making a list of them.
+/// This is a generic function that essentially checks the Mind value, and then calls
+/// a more specialized Enumerate function based on the result.
+/// Enumerate functions are used for checking if there is a valid target in range,
+/// and making a list of them.
 #[unity::hook("App", "MapTarget", "Enumerate")]
 pub fn maptarget_enumerate_disengage(this: &mut MapTarget, mask: i32, method_info: OptionalMethod) {
     if this.m_mind == 0x39 {
@@ -283,8 +284,8 @@ pub fn maptarget_enumerate_disengage(this: &mut MapTarget, mask: i32, method_inf
 }
 
 
-// This is the function that usually runs when you press A while highlighting a target and the
-// forecast windows are up.
+/// This is the function that usually runs when you press A while highlighting a target and the
+/// forecast windows are up.
 #[unity::hook("App", "MapSequenceTargetSelect", "DecideNormal")]
 pub fn mapsequencetargetselect_decide_normal_disengage(this: &mut MapSequenceTargetSelect, method_info: OptionalMethod) {
     let maptarget_instance = get_instance::<MapTarget>();
@@ -344,7 +345,8 @@ pub fn mapsequencetargetselect_decide_normal_disengage(this: &mut MapSequenceTar
     }
 }
 
-//This is the function that builds the summon menu allowing you to pick your desired orb color.
+///This is the function that builds the summon menu allowing you to pick your desired orb color.
+///This hook is here to skip that menu.
 #[unity::hook("App", "MapSummonMenu", "CreateSummonBind")]
 pub fn mapsummonmenu_createsummonbind_disengage(sup: &mut ProcInst, method_info: OptionalMethod) {
     let map_target = get_instance::<MapTarget>();
@@ -383,6 +385,7 @@ pub fn mapsequencemind_branch_disengage(this: &mut MapSequenceMind, method_info:
 
 /// This function determines if you have combat anims on, and then ProcInst::Jump
 /// to the appropriate part of MapSequenceEngageSummon's procs based on that.
+/// This hook is for making it always use the non-anims setup.
 #[unity::hook("App", "MapSequenceEngageSummon", "Branch")]
 pub fn mapsequenceengagesummon_branch_disengage(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
     let map_mind = get_instance::<MapMind>();
@@ -401,6 +404,7 @@ pub fn mapsequenceengagesummon_branch_disengage(this: &mut MapSequenceEngageSumm
 }
 
 /// This function creates the animation with the resulting function appearing on-screen alongside their rarity.
+/// This hook is simply to skip that little animation.
 #[unity::hook("App", "MapSequenceEngageSummon", "CreateTelop")]
 pub fn mapsequenceengagesummon_createtelop_disengage(this: &mut MapSequenceEngageSummon, method_info: OptionalMethod) {
     let map_mind = get_instance::<MapMind>();
@@ -455,8 +459,8 @@ pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i3
                 god_name = "ルフレ".to_string();
             };
         }
-        //If you have Ephraim, this'll give you Eirika instead.  Feel free to remove this if you've
-        //added an Ephraim Disengage PID.
+        ///If you have Ephraim equipped, this'll give you Eirika instead.
+        ///Feel free to remove this if you've added an Ephraim Disengage PID.
         else if god_name == "エフラム" {
             god_name = "エイリーク".to_string();
         }
@@ -561,7 +565,8 @@ pub extern "C" fn disengage_get_is_forecast(_this: &(), _method_info: OptionalMe
     false
 }
 
-
+///Determines if the option appears in the menu.
+///returning 1 means it appears, returning 4 means it does not.
 pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: OptionalMethod) -> i32 {
     let map_target = get_instance::<MapTarget>();
 
