@@ -155,7 +155,7 @@ pub trait UnitEngageManip {
 
 impl UnitEngageManip for Unit {
     fn unit_engage_check(&self) -> bool {
-        if self.status.value & 0x4000000000000 == 0 && self.status.value & 0x800000 == 0 {
+        if self.status.value & 0x2000000 == 0 {
             return false;
         }
         true
