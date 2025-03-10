@@ -123,7 +123,28 @@ fn godpool_tryget(gid: &'static Il2CppString, _method_info: OptionalMethod) -> O
 #[unity::from_offset("App", "UnitPool", "GetForce")]
 fn unitpool_get_force(index: i32, _method_info: OptionalMethod) -> Option<&'static Force>;
 
+#[skyline::from_offset(0x01a0c990)]
+fn unit_item_add_from_iid(this: &Unit, iid: &'static Il2CppString, _method_info: OptionalMethod);
+
+#[skyline::from_offset(0x01a41450)]
+fn unit_item_put_off_from_index(this: &Unit, index: i32, closeup: bool, _method_info: OptionalMethod);
+
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
+
+pub trait UnitItemManip {
+    fn unit_item_add_iid(&mut self, iid: &'static Il2CppString);
+    fn unit_item_remove_index(&mut self, index: i32, closeup: bool);
+}
+  
+impl UnitItemManip for Unit {
+    fn unit_item_add_iid(&mut self, iid: &'static Il2CppString) {
+        unsafe{unit_item_add_from_iid(self, iid, None as OptionalMethod)};
+    }
+    fn unit_item_remove_index(&mut self, index: i32, closeup: bool) {
+        unsafe{unit_item_put_off_from_index(self, index, closeup, None as OptionalMethod)};
+    }
+}
+
 
 #[unity::hook("App", "Unit", "CreateForSummonImpl1")]
 pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData, original: &Unit, rank: i32, method_info: OptionalMethod) {
@@ -148,13 +169,14 @@ pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData,
     }
 }
 
+
 /// Delete separated Emblems from the player force on map end.
 #[unity::hook("App", "MapSequence", "Complete")]
 pub fn mapsequence_complete_disengage(this: &mut (), method_info: OptionalMethod) {
     call_original!(this, method_info);
 
     UnitPool::get_force(ForceType::Player as i32).iter()
-        .filter(|unit| unit.get_pid().contains("PID_SUMMON"))
+        .filter(|unit| unit.get_pid().contains("PID_DISENGAGE"))
         .for_each(|unit| unsafe{ unitutil_summondeleteimpl(unit, method_info) });
 }
 
@@ -411,7 +433,7 @@ pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i3
 
         let person_data = personlist
             .iter_mut()
-            .find(|curr_char|curr_char.pid.to_string() == ("PID_SUMMON_".to_owned() + &map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string())); // Ray: I'd usually smithe someone from writing this many unwraps without handling errors, but I assume if this runs into an error it should crash anyways.
+            .find(|curr_char|curr_char.pid.to_string() == ("PID_DISENGAGE_".to_owned() + &map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string())); // Ray: I'd usually smithe someone from writing this many unwraps without handling errors, but I assume if this runs into an error it should crash anyways.
 
         if let Some(found_person) = person_data {
             *person = found_person;
