@@ -28,38 +28,38 @@ impl ReUniteTargetEnumerator for MapTarget {
     let mut local_c0 = RangeEnumerator::default();
   
     if self.unit.is_none() {
-      println!("self.unit = None");
+      //println!("self.unit = None");
       return;
     } else {
-      println!("self.unit = {}", self.unit.unwrap().person.unit_icon_id.unwrap());
+      //println!("self.unit = {}", self.unit.unwrap().person.unit_icon_id.unwrap());
     }
 
     let cur_unit = self.unit.unwrap();
   
     if cur_unit.status.value & 0x10000 != 0 {
-      println!("self.unit's Status is funky");
+      //println!("self.unit's Status is funky");
       return;
     }
   
     if (cur_unit.extra_hp_stock_count + cur_unit.hp_stock_count == 0) && (cur_unit.hp_value == 0) {
-      println!("self.unit's HP is funky");
+      //println!("self.unit's HP is funky");
       return;
     }
 
     if cur_unit.get_job().name.to_string() == "MJID_Emblem" {
-      println!("Self is an emblem");
+      //println!("Self is an emblem");
       return;
     }
 
     if cur_unit.get_god_unit().is_some() {
-      println!("Self has an emblem");
+      //println!("Self has an emblem");
       return;
     }
   
     let mapimage_instance = get_instance::<MapImage>();
   
     if ((mapimage_instance.playarea_z2 - cur_unit.z as i32) * (cur_unit.z as i32 - mapimage_instance.playarea_z1)) | ((mapimage_instance.playarea_x2 - cur_unit.x as i32) * (cur_unit.x as i32 - mapimage_instance.playarea_x1)) < 0 {
-      println!("PlayArea for self.unit is funky");
+      //println!("PlayArea for self.unit is funky");
       return;
     }
   
@@ -80,7 +80,7 @@ impl ReUniteTargetEnumerator for MapTarget {
     let ter_dat = TerrainData::try_index_get(result.into()).unwrap();
 
     if ter_dat.is_not_target() {
-      println!("Terrain Data is not a valid target");
+      //println!("Terrain Data is not a valid target");
       return;
     }
     // Check if the current unit is a player, enemy or ally
@@ -92,7 +92,7 @@ impl ReUniteTargetEnumerator for MapTarget {
     };
   
     if force_type1 < ForceType::Absent as i32 {
-      println!("force is valid");
+      //println!("force is valid");
       let mask_skill = cur_unit.mask_skill.unwrap();
 
       if (cur_unit.status.value & 0x600008000000 == 0) && (mask_skill.flags & 0x14 == 0) && (mask_skill.bad_states & 0x4d0 == 0) {
@@ -112,15 +112,14 @@ impl ReUniteTargetEnumerator for MapTarget {
         local_c0.pivot_x = x_1 + 1;
         local_c0.near = 1;
         local_c0.far = 1;
-        // lol whatever i'm tired and don't wanna deal with this, pray the gods are benevolent
-        // local_c0.m_current.range = x_1 << 0x20;
+
         (local_c0.current.range, _) = x_1.overflowing_shl(0x20);
         local_c0.max_x = x_2;
         local_c0.min_z = z_1;
 
         // Go through every target in the range
         for target in local_c0.flat_map(|(x, z)| mapimage_instance.get_target_unit(x, z)) {
-          println!("Target found: {}", engage::mess::Mess::get(target.person.get_name().unwrap()));
+          //println!("Target found: {}", engage::mess::Mess::get(target.person.get_name().unwrap()));
 
           // Check if the forces are similar
           let target_force = target.force.map(|force| force.force_type & 0x1f).unwrap_or(7);
@@ -131,23 +130,23 @@ impl ReUniteTargetEnumerator for MapTarget {
             continue;
           }
 
-          println!("Target is same force as unit");
+          //println!("Target is same force as unit");
 
           // Target is not targetable.
           if target.status.value & 0x10000 != 0 {
-            println!("Target has the NotTarget status");
+            //println!("Target has the NotTarget status");
             continue;
           }
 
           // Target is somehow dead?
           if (target.extra_hp_stock_count + target.hp_stock_count == 0) && (target.hp_value == 0) {
-            println!("Target is dead");
+            //println!("Target is dead");
             continue;
           }
 
           // Target is not an emblem
           if target.get_job().name.to_string() != "MJID_Emblem" {
-            println!("Target is not an emblem: {}", target.get_job().name);
+            //println!("Target is not an emblem: {}", target.get_job().name);
             continue;
           }
 
@@ -155,7 +154,7 @@ impl ReUniteTargetEnumerator for MapTarget {
           if ((mapimage_instance.playarea_z2 - target.z as i32) * (target.z as i32 - mapimage_instance.playarea_z1)) | ((mapimage_instance.playarea_x2 - target.x as i32) * (target.x as i32 - mapimage_instance.playarea_x1)) < 0 {
             continue;
           }
-          println!("Target is within playable bounds");
+          //println!("Target is within playable bounds");
 
 
           // Get the index of the TerrainData where the target is standing
@@ -163,7 +162,7 @@ impl ReUniteTargetEnumerator for MapTarget {
   
           if let Some(terrain_data) = TerrainData::try_index_get(terrain_idx.into()) {
             if terrain_data.is_not_target() {
-              println!("Terrain Data is not targetable");
+              //println!("Terrain Data is not targetable");
               continue;
             }
           }
@@ -187,12 +186,10 @@ impl ReUniteTargetEnumerator for MapTarget {
           }
         }
       } else{
-        println!("General Return");
+        //println!("General Return");
         return;
       }
     }
-
-    println!("General Return 2");
-    //call_original!(this, _method_info);
+    //println!("General Return 2");
   }
 }
