@@ -132,6 +132,9 @@ fn unit_item_put_off_from_index(this: &Unit, index: i32, closeup: bool, _method_
 #[unity::from_offset("App", "Unit", "CanEngageStart")]
 fn unit_can_engage_start(this: &Unit, _method_info: OptionalMethod) -> bool;
 
+#[skyline::from_offset(0x01e8d5b0)]
+fn battlemath_get_value(num: i32, _method_info: OptionalMethod) -> i32;
+
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
 
 pub trait UnitItemManip {
@@ -187,17 +190,6 @@ pub fn unit_createforsummonimpl1_disengage(this: &mut Unit, person: &PersonData,
             }
         }
     }
-}
-
-
-/// Delete separated Emblems from the player force on map end.
-#[unity::hook("App", "MapSequence", "Complete")]
-pub fn mapsequence_complete_disengage(this: &mut (), method_info: OptionalMethod) {
-    call_original!(this, method_info);
-
-    UnitPool::get_force(ForceType::Player as i32).iter()
-        .filter(|unit| unit.get_pid().contains("PID_DISENGAGE"))
-        .for_each(|unit| unsafe{ unitutil_summondeleteimpl(unit, method_info) });
 }
 
 // This function is what sets the text that appears in between the two windows
@@ -430,6 +422,9 @@ pub fn unit_createforsummon_disengage(this: &mut Unit, original: &mut Unit, rank
         // We turn this off to keep the summon from de-spawning.
         if (this.status.value & 0x200000000000) != 0 {
             this.status.value = this.status.value ^ 0x200000000000;
+            //Turns on the DisposGuest status so that the unit is removed
+            //from the player's units after the map ends.
+            this.status.value = this.status.value ^ 0x400000;
             this.update();
 
             //This code separates the unit from the emblem.
@@ -450,11 +445,22 @@ pub fn unitutil_calcsummon_disengage(person: &mut &mut PersonData, rank: &mut i3
         let map_target = get_instance::<MapTarget>();
 
         let personlist = PersonData::get_list_mut().expect("Couldn't reach PersonData List");
+        let mut god_name = map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string();
 
+        if god_name == "クロム" {
+            let rnmnm = unsafe{battlemath_get_value(2, method_info)};
+            println!("{}", rnmnm);
+            if rnmnm != 1 {
+                god_name = "ルフレ".to_string();
+            };
+        }
+        else if god_name == "エフラム" {
+            god_name = "エイリーク".to_string();
+        }
+            
         let person_data = personlist
             .iter_mut()
-            .find(|curr_char|curr_char.pid.to_string() == ("PID_DISENGAGE_".to_owned() + &map_target.unit.unwrap().god_unit.unwrap().data.asset_id.to_string())); // Ray: I'd usually smithe someone from writing this many unwraps without handling errors, but I assume if this runs into an error it should crash anyways.
-
+            .find(|curr_char|curr_char.pid.to_string() == ("PID_DISENGAGE_".to_owned() + &god_name)); // Ray: I'd usually smithe someone from writing this many unwraps without handling errors, but I assume if this runs into an error it should crash anyways.
         if let Some(found_person) = person_data {
             *person = found_person;
             true
@@ -556,6 +562,9 @@ pub extern "C" fn disengage_get_is_forecast(_this: &(), _method_info: OptionalMe
 pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: OptionalMethod) -> i32 {
     let map_target = get_instance::<MapTarget>();
 
+    if map_target.unit.is_none() {
+        return 4;
+    }
     if map_target.unit.unwrap().get_god_unit().is_some() && map_target.unit.unwrap().unit_engage_check() == false && map_target.unit.unwrap().unit_can_engage() {
         1
     } else {
@@ -622,7 +631,6 @@ pub fn main() {
         mapbattleinfoparamsetter_setbattleinfo_disengage,
         mapbattleinforoot_setcommandtext_disengage,
         mapbattleinforoot_setup_disengage,
-        mapsequence_complete_disengage,
         unit_createforsummonimpl1_disengage
     );
 }
