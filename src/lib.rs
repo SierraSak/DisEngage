@@ -129,6 +129,9 @@ fn unit_item_add_from_iid(this: &Unit, iid: &'static Il2CppString, _method_info:
 #[skyline::from_offset(0x01a41450)]
 fn unit_item_put_off_from_index(this: &Unit, index: i32, closeup: bool, _method_info: OptionalMethod);
 
+#[unity::from_offset("App", "Unit", "CanEngageStart")]
+fn unit_can_engage_start(this: &Unit, _method_info: OptionalMethod) -> bool;
+
 static DISENGAGE_CLASS: OnceLock<&'static mut Il2CppClass> = OnceLock::new();
 
 pub trait UnitItemManip {
@@ -142,6 +145,23 @@ impl UnitItemManip for Unit {
     }
     fn unit_item_remove_index(&mut self, index: i32, closeup: bool) {
         unsafe{unit_item_put_off_from_index(self, index, closeup, None as OptionalMethod)};
+    }
+}
+
+pub trait UnitEngageManip {
+    fn unit_engage_check(&self) -> bool;
+    fn unit_can_engage(&self) -> bool;
+}
+
+impl UnitEngageManip for Unit {
+    fn unit_engage_check(&self) -> bool {
+        if self.status.value & 0x4000000000000 == 0 && self.status.value & 0x800000 == 0 {
+            return false;
+        }
+        true
+    }
+    fn unit_can_engage(&self) -> bool {
+        unsafe{unit_can_engage_start(self, None)}
     }
 }
 
@@ -536,7 +556,7 @@ pub extern "C" fn disengage_get_is_forecast(_this: &(), _method_info: OptionalMe
 pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: OptionalMethod) -> i32 {
     let map_target = get_instance::<MapTarget>();
 
-    if map_target.unit.unwrap().get_god_unit().is_some() {
+    if map_target.unit.unwrap().get_god_unit().is_some() && map_target.unit.unwrap().unit_engage_check() == false && map_target.unit.unwrap().unit_can_engage() {
         1
     } else {
         if let Some(dataset) = map_target.m_dataset.as_mut() {
@@ -544,7 +564,7 @@ pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: Optional
         }
         map_target.enumerate_reunite();
 
-        if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" {
+        if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" && map_target.unit.unwrap().unit_engage_check() == false {
             1
         } else {
             4
