@@ -581,7 +581,7 @@ pub extern "C" fn disengage_get_map_attribute(_this: &(), _method_info: Optional
         }
         map_target.enumerate_reunite();
 
-        if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" && map_target.unit.unwrap().unit_engage_check() == false {
+        if (map_target.m_dataset.as_ref().unwrap().fields.m_list.size > 0) && map_target.unit.unwrap().get_job().name.to_string() != "MJID_Emblem" && map_target.unit.unwrap().unit_engage_check() == false && map_target.unit.unwrap().status.value & 0x40000 == 0 {
             1
         } else {
             4
